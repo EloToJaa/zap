@@ -1,4 +1,6 @@
 const zap = @import("zap");
+const std = @import("std");
+const json = @import("../lib/json.zig");
 
 const User = @import("../models/user.zig").User;
 const StatusCode = zap.StatusCode;
@@ -10,18 +12,20 @@ pub fn setPin(req: zap.Request) void {
         return;
     }
 
+    req.parseBody() catch return;
+    const list = req.parametersToOwnedList(std.heap.page_allocator, true) catch return;
+    const pin = list.items.ptr[0].value.?.String;
+    defer pin.deinit();
+
+    // var buf: [100]u8 = undefined;
+    // const name = std.fmt.bufPrint(&buf, "{}", .{pin}) catch return;
     const user = User{
         .first_name = "PIN",
-        .last_name = "123",
+        .last_name = pin.str,
     };
 
-    var buf: [512]u8 = undefined;
-    var json_to_send: []const u8 = undefined;
-    if (zap.stringifyBuf(&buf, user, .{})) |json| {
-        json_to_send = json;
-    } else {
-        json_to_send = "null";
-    }
+    var buf: [100]u8 = undefined;
+    const json_to_send = try json.serialize(user, &buf);
 
     req.setContentType(.JSON) catch return;
     req.setStatus(StatusCode.ok);
