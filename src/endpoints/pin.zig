@@ -13,12 +13,13 @@ pub fn setPin(req: zap.Request) void {
     }
 
     req.parseBody() catch return;
+
     const list = req.parametersToOwnedList(std.heap.page_allocator, true) catch return;
+    defer list.deinit();
+
     const pin = list.items.ptr[0].value.?.String;
     defer pin.deinit();
 
-    // var buf: [100]u8 = undefined;
-    // const name = std.fmt.bufPrint(&buf, "{}", .{pin}) catch return;
     const user = User{
         .first_name = "PIN",
         .last_name = pin.str,
